@@ -9,5 +9,9 @@ void nextScreen(context, page) {
 }
 
 void nextScreenReplacement(context, page) {
-  Navigator.pushReplacement(context, MaterialPageRoute(builder: page));
+  Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => page,
+      ));
 }
