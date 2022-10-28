@@ -46,6 +46,7 @@ dependencies:
   rounded_loading_button: ^2.1.0
   font_awesome_flutter: ^10.2.1
   connectivity_plus: ^3.0.2
+  http: ^0.13.5
 
 dev_dependencies:
   flutter_test:

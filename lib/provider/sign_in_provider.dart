@@ -1,9 +1,13 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 
 class SignInProvider extends ChangeNotifier {
   //Instances of firebaseauth, facebook and google
@@ -59,7 +63,11 @@ class SignInProvider extends ChangeNotifier {
   // sign in with Google
   Future signInWithGoogle() async {
     final GoogleSignInAccount? googleSignInAccount =
-        await googleSignIn.signIn();
+        await googleSignIn.signIn().catchError((error) {
+      _isSignedIn = false;
+      _hasError = true;
+      notifyListeners();
+    });
 
     if (googleSignInAccount != null) {
       // executing Authentication
@@ -103,6 +111,72 @@ class SignInProvider extends ChangeNotifier {
             _errorCode = error.toString();
             _hasError = true;
             notifyListeners();
+        }
+      } on PlatformException catch (err) {
+        // Checks for type PlatformException
+        if (err.code == 'sign_in_canceled') {
+          // Checks for sign_in_canceled exception
+          return null;
+        } else {
+          throw err; // Throws PlatformException again because it wasn't the one we wanted
+        }
+      }
+    } else {
+      _hasError = true;
+      notifyListeners();
+    }
+  }
+
+  //sign In with Facebook
+  Future signInWithFacebook() async {
+    final LoginResult loginResult = await facebookAuth.login();
+    // getting the profile
+    final graphResponse = await http.get(Uri.parse(
+        'https://graph.facebook.com/v2.12/me?fields=name,picture.width(800).height(800),first_name,last_name,email&access_token=${loginResult.accessToken!.token}'));
+
+    final profile = jsonDecode(graphResponse.body);
+
+    if (loginResult.status == LoginStatus.success) {
+      try {
+        final OAuthCredential credential =
+            FacebookAuthProvider.credential(loginResult.accessToken!.token);
+        await firebaseauth.signInWithCredential(credential);
+
+        //saving the values
+        _name = profile['name'];
+        _email = profile['email'];
+        _uid = profile['id'];
+        _imageUrl = profile['picture']['data']['url'];
+        _provider = "FACEBOOK";
+        _hasError = false;
+        notifyListeners();
+      } on FirebaseAuthException catch (error) {
+        switch (error.code) {
+          case "auth/account-exists-with-different-credential":
+            _errorCode =
+                "You already have an account with us. Use correct provider";
+            _hasError = true;
+            notifyListeners();
+            break;
+
+          case "null":
+            _errorCode = "Some unexpected error while trying to sign in";
+            _hasError = true;
+            notifyListeners();
+            break;
+
+          default:
+            _errorCode = error.toString();
+            _hasError = true;
+            notifyListeners();
+        }
+      } on PlatformException catch (err) {
+        // Checks for type PlatformException
+        if (err.code == 'sign_in_canceled') {
+          // Checks for sign_in_canceled exception
+          return null;
+        } else {
+          throw err; // Throws PlatformException again because it wasn't the one we wanted
         }
       }
     } else {
@@ -149,7 +223,7 @@ class SignInProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future saveDataFromSharedPreferences() async {
+  Future getDataFromSharedPreferences() async {
     final SharedPreferences sp = await SharedPreferences.getInstance();
     _name = sp.getString('name');
     _email = sp.getString('email');

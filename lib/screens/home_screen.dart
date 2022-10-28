@@ -12,18 +12,71 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  Future getData() async {
+    final sp = context.read<SignInProvider>();
+    sp.getDataFromSharedPreferences();
+  }
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    getData();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final sp = context.read<SignInProvider>();
+    final sp = context.watch<SignInProvider>();
     return Scaffold(
       body: Center(
-        child: ElevatedButton(
-            onPressed: () {
-              sp.userSignOut();
-              nextScreenReplacement(context, LogInScreen());
-            },
-            child: const Text("Sign out")),
-      ),
+          child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: <Widget>[
+          CircleAvatar(
+            backgroundColor: Colors.white,
+            backgroundImage: NetworkImage("${sp.imageUrl}"),
+            radius: 50,
+          ),
+          const SizedBox(height: 20),
+          Text(
+            "${sp.name}",
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            "${sp.email}",
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            "${sp.uid}",
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+          ),
+          Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const Text("PROVIDER: "),
+                const SizedBox(
+                  width: 5,
+                ),
+                Text(
+                  "${sp.provider}".toUpperCase(),
+                  style: const TextStyle(color: Colors.red),
+                )
+              ]),
+          const SizedBox(
+            height: 20,
+          ),
+          ElevatedButton(
+              onPressed: () {
+                sp.userSignOut();
+                nextScreenReplacement(context, LogInScreen());
+              },
+              child: const Icon(Icons.login_outlined))
+        ],
+      )),
     );
   }
 }
