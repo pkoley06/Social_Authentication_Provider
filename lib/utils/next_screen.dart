@@ -9,9 +9,11 @@ import 'package:flutter/material.dart';
 // }
 
 void nextScreenReplacement(context, page) {
-  Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => page,
-      ));
+  Navigator.pushAndRemoveUntil(
+    context,
+    MaterialPageRoute(
+      builder: (context) => page,
+    ),
+    (route) => false,
+  );
 }
